@@ -6,13 +6,13 @@ import java.util.List;
 
 public class MenuDAO {
 
-    public List<MenuDTO> selectAllMenu(SqlSession sqlSession) {
+  public List<MenuDTO> selectAllMenu(SqlSession sqlSession) {
 
-        return sqlSession.selectList("MenuMapper.selectAllMenu");
-    }
+    return sqlSession.selectList("MenuMapper.selectAllMenu");
+  }
 
-    public MenuDTO selectMenuByCode(SqlSession sqlSession, int code) {
+  public MenuDTO selectMenuByCode(SqlSession sqlSession, int code) {
 
-        return sqlSession.selectOne("MenuMapper.selectMenuByCode", code);
-    }
+    return sqlSession.selectOne("MenuMapper.selectMenuByCode", code);
+  }
 }

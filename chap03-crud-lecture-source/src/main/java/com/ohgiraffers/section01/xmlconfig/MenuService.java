@@ -8,31 +8,31 @@ import static com.ohgiraffers.section01.xmlconfig.Template.getSqlSession;
 
 public class MenuService {
 
-    private final MenuDAO menuDAO;
+  private final MenuDAO menuDAO;
 
-    public MenuService() {
-        menuDAO = new MenuDAO();
-    }
+  public MenuService() {
+    menuDAO = new MenuDAO();
+  }
 
-    public List<MenuDTO> selectAllMenu() {
+  public List<MenuDTO> selectAllMenu() {
 
-        SqlSession sqlSession = getSqlSession();
+    SqlSession sqlSession = getSqlSession();
 
-        List<MenuDTO> menuList = menuDAO.selectAllMenu(sqlSession);
+    List<MenuDTO> menuList = menuDAO.selectAllMenu(sqlSession);
 
-        sqlSession.close();
+    sqlSession.close();
 
-        return menuList;
-    }
+    return menuList;
+  }
 
-    public MenuDTO selectMenuByCode(int code) {
+  public MenuDTO selectMenuByCode(int code) {
 
-        SqlSession sqlSession = getSqlSession();
+    SqlSession sqlSession = getSqlSession();
 
-        MenuDTO menu = menuDAO.selectMenuByCode(sqlSession, code);
+    MenuDTO menu = menuDAO.selectMenuByCode(sqlSession, code);
 
-        sqlSession.close();
+    sqlSession.close();
 
-        return menu;
-    }
+    return menu;
+  }
 }
