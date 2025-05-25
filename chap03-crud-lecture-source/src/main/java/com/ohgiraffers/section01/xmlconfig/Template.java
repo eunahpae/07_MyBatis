@@ -23,7 +23,6 @@ public class Template {
         throw new RuntimeException(e);
       }
     }
-
     return sqlSessionFactory.openSession(false);
   }
 }
