@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ohgiraffers.section01.xml.DynamicSqlMapper">
+
+  <!-- 메뉴 정보를 결과로 매핑하기 위한 resultMap 정의 -->
+  <resultMap id="menuResultMap" type="com.ohgiraffers.common.MenuDTO">
+    <id property="code" column="MENU_CODE"/>
+    <result property="name" column="MENU_NAME"/>
+    <result property="price" column="MENU_PRICE"/>
+    <result property="categoryCode" column="CATEGORY_CODE"/>
+    <result property="orderableStatus" column="ORDERABLE_STATUS"/>
+  </resultMap>
+
+  <!--
+    [동적 SQL - <if> 사용] : test 속성의 조건에 해당할 때만 엘리먼트 구문을 쿼리에 포함한다.
+    사용자가 입력한 가격대에 따라 WHERE 절에 조건을 동적으로 추가
+    - 가격 구간에 따라 서로 다른 조건을 추가함
+    - ORDERABLE_STATUS = 'Y'인 메뉴만 조회
+  -->
+  <select id="selectMenuByPrice" parameterType="hashmap" resultMap="menuResultMap">
+    SELECT
+    A.MENU_CODE,
+    A.MENU_NAME,
+    A.MENU_PRICE,
+    A.CATEGORY_CODE,
+    A.ORDERABLE_STATUS
+    FROM TBL_MENU A
+    WHERE ORDERABLE_STATUS = 'Y'
+
+    <!-- 가격이 0 ~ 10,000원 이하인 경우 -->
+    <if test="price gte 0 and price lte 10000">
+      <![CDATA[
+        AND A.MENU_PRICE < #{price}
+      ]]>
+    </if>
+
+    <!-- 가격이 10,000원 초과 ~ 20,000원 이하인 경우 -->
+    <if test="price gt 10000 and price lte 20000">
+      AND A.MENU_PRICE BETWEEN 10000 AND #{price}
+    </if>
+
+    <!-- 가격이 20,000원 초과 ~ 30,000원 이하인 경우 -->
+    <if test="price gt 20000 and price lte 30000">
+      AND A.MENU_PRICE BETWEEN 20000 AND #{price}
+    </if>
+
+    <!-- 가격이 30,000원 초과인 경우 -->
+    <if test="price gt 30000">
+      AND A.MENU_PRICE BETWEEN 30000 AND #{price}
+    </if>
+
+    ORDER BY A.MENU_CODE
+  </select>
+
+  <!--
+    [동적 SQL - <if> 사용]
+    메뉴 이름 또는 카테고리명을 기준으로 검색 조건을 추가
+    - 'name' 조건일 경우: 메뉴명 LIKE 검색
+    - 'category' 조건일 경우: TBL_CATEGORY 테이블 JOIN 후 카테고리명 검색
+  -->
+  <select id="searchMenu" parameterType="SearchCriteria" resultMap="menuResultMap">
+    SELECT
+    A.MENU_CODE,
+    A.MENU_NAME,
+    A.MENU_PRICE,
+    A.CATEGORY_CODE,
+    A.ORDERABLE_STATUS
+    FROM TBL_MENU A
+
+    <!-- 조건이 'category' 일 때만 카테고리 테이블과 조인 -->
+    <if test="condition == 'category'">
+      JOIN TBL_CATEGORY B ON (A.CATEGORY_CODE = B.CATEGORY_CODE)
+    </if>
+
+    WHERE A.ORDERABLE_STATUS = 'Y'
+
+    <!-- 조건이 'name' 일 경우: 메뉴명 LIKE 검색 -->
+    <if test="condition == 'name'">
+      AND A.MENU_NAME LIKE CONCAT('%', #{value}, '%')
+    </if>
+
+    <!-- 조건이 'category' 일 경우: 카테고리명 일치 여부 검사 -->
+    <if test="condition == 'category'">
+      AND B.CATEGORY_NAME = #{value}
+    </if>
+
+    ORDER BY A.MENU_CODE
+  </select>
+
+  <!--
+    [동적 SQL - <choose>, <when>, <otherwise> 사용]
+    상위 카테고리명(식사/음료/디저트)에 따라 서로 다른 CATEGORY_CODE 목록을 필터링
+    - 자바의 switch-case 와 유사한 방식
+    - 조건에 맞는 when이 없으면 otherwise 실행
+  -->
+  <select id="searchMenuBySubCategory" parameterType="SearchCriteria" resultMap="menuResultMap">
+    SELECT
+    A.MENU_CODE,
+    A.MENU_NAME,
+    A.MENU_PRICE,
+    A.CATEGORY_CODE,
+    A.ORDERABLE_STATUS
+    FROM TBL_MENU A
+    WHERE A.ORDERABLE_STATUS = 'Y'
+
+    <choose>
+      <!-- 상위 분류가 '식사'일 경우 -->
+      <when test="value == '식사'">
+        AND A.CATEGORY_CODE IN (4,5,6,7)
+      </when>
+
+      <!-- 상위 분류가 '음료'일 경우 -->
+      <when test="value == '음료'">
+        AND A.CATEGORY_CODE IN (8,9,10)
+      </when>
+
+      <!-- 그 외 (예: 디저트 등) -->
+      <otherwise>
+        AND A.CATEGORY_CODE IN (11,12)
+      </otherwise>
+    </choose>
+
+    ORDER BY A.MENU_CODE
+  </select>
+
+  <!--
+  <foreach> 태그 설명:
+  MyBatis 에서 컬렉션(리스트, 배열 등)의 각 요소를 반복 처리하여 SQL 쿼리를 동적으로 생성할 때 사용.
+  자바의 for 문과 유사한 역할을 수행함.
+
+  주요 속성:
+  1. collection : 반복 대상 컬렉션의 이름. 파라미터로 전달된 Map 이나 객체 내 컬렉션 프로퍼티명과 일치해야 함.
+  2. item : 반복 시 현재 요소를 참조할 이름. 반복문 내에서 #{item} 형태로 값 바인딩에 사용됨.
+  3. open : 반복 시작 시 가장 앞에 삽입될 문자 또는 문자열. 예) "(" → 괄호 여는 부분
+  4. separator : 각 요소 사이에 삽입될 구분자. 예) ", " → 각 값 사이 쉼표와 공백
+  5. close : 반복 종료 시 가장 뒤에 삽입될 문자 또는 문자열. 예) ")" → 괄호 닫는 부분
+
+  본 쿼리에서는 리스트에 담긴 메뉴 코드들을 SQL의 IN 절 내에 쉼표로 구분된 형태로 동적으로 나열하기 위해 사용함.
+  예를 들어 randomMenuCodeList가 [1, 3, 7] 이면, 아래 쿼리는 다음과 같이 변환됨:
+  WHERE 1 = 1
+    AND A.MENU_CODE IN (#{menuCode[0]}, #{menuCode[1]}, #{menuCode[2]})
+  실제 바인딩 시 각각의 #{menuCode}는 1, 3, 7 값으로 치환됨.
+  -->
+  <select id="searchMenuByRandomMenuCode" parameterType="hashmap" resultMap="menuResultMap">
+    SELECT
+    A.MENU_CODE
+    , A.MENU_NAME
+    , A.MENU_PRICE
+    , A.CATEGORY_CODE
+    , A.ORDERABLE_STATUS
+    FROM TBL_MENU A
+    WHERE 1 = 1
+    AND A.MENU_CODE IN
+    <foreach collection="randomMenuCodeList" item="menuCode" open="(" separator=", " close=")">
+      #{menuCode}
+    </foreach>
+  </select>
+</mapper>

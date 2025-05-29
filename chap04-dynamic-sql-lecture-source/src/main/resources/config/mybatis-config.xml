@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+  <properties resource="config/connection-info.properties"/>
+  <!--
+    Java 클래스에 대한 별칭(alias)을 지정
+    - XML 매퍼에서 클래스명을 간단한 이름으로 사용 가능
+  -->
+  <typeAliases>
+    <typeAlias type="com.ohgiraffers.common.SearchCriteria" alias="SearchCriteria"/>
+  </typeAliases>
+  <environments default="dev">
+    <environment id="dev">
+      <transactionManager type="JDBC"/>
+      <dataSource type="POOLED">
+        <property name="driver" value="${driver}"/>
+        <property name="url" value="${url}"/>
+        <property name="username" value="${username}"/>
+        <property name="password" value="${password}"/>
+      </dataSource>
+    </environment>
+  </environments>
+  <!--
+    매퍼 XML 파일들을 등록
+    - 지정한 패키지 내의 모든 매퍼 인터페이스와 XML 매퍼를 자동으로 인식
+    - com.ohgiraffers.section01.xml 패키지에 위치한 매퍼를 모두 등록
+  -->
+  <mappers>
+    <package name="com.ohgiraffers.section01.xml"/>
+  </mappers>
+</configuration>
