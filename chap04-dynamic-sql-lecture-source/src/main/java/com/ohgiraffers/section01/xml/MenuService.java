@@ -115,8 +115,6 @@ public class MenuService {
     Map<String, List<Integer>> criteria = new HashMap<>();
     criteria.put("randomMenuByMenuCode", randomMenuCodeList);
 
-    // Mapper의 searchMenuByRandomMenuCode 메서드를 호출하여
-    // 조건에 맞는 메뉴 목록을 DB 에서 조회
     List<MenuDTO> menuList = mapper.searchMenuByRandomMenuCode(criteria);
 
     if (menuList != null && !menuList.isEmpty()) {
@@ -125,6 +123,75 @@ public class MenuService {
       }
     } else {
       System.out.println("검색 결과가 존재하지 않습니다.");
+    }
+
+    sqlSession.close();
+  }
+
+  /**
+   * 메뉴 코드가 있으면 해당 메뉴 검색, 없으면 전체 메뉴 조회 (where 태그와 if 태그의 결합 사용)
+   *
+   * @param searchCriteria 검색 조건이 담긴 객체 (code 포함 가능)
+   */
+  public void searchMenuByCodeOrSearchAll(SearchCriteria searchCriteria) {
+
+    SqlSession sqlSession = getSqlSession();
+    mapper = sqlSession.getMapper(DynamicSqlMapper.class);
+
+    List<MenuDTO> menuList = mapper.searchMenuByCodeOrSearchAll(searchCriteria);
+
+    if (menuList != null && menuList.size() > 0) {
+      for (MenuDTO menu : menuList) {
+        System.out.println(menu);
+      }
+    } else {
+      System.out.println("검색 결과가 존재하지 않습니다.");
+    }
+
+    sqlSession.close();
+  }
+
+  /**
+   * 메뉴명 또는 카테고리명 중 하나 이상 일치하는 메뉴 검색 (동적 SQL의 where 태그와 trim 태그 활용)
+   *
+   * @param criteria 검색 기준이 담긴 Map (name, categoryName 등)
+   */
+  public void searchMenuByNameOrCategory(Map<String, Object> criteria) {
+
+    SqlSession sqlSession = getSqlSession();
+    mapper = sqlSession.getMapper(DynamicSqlMapper.class);
+
+    List<MenuDTO> menuList = mapper.searchMenuByNameOrCategory(criteria);
+
+    if (menuList != null && menuList.size() > 0) {
+      for (MenuDTO menu : menuList) {
+        System.out.println(menu);
+      }
+    } else {
+      System.out.println("검색 결과가 존재하지 않습니다.");
+    }
+
+    sqlSession.close();
+  }
+
+  /**
+   * 전달받은 정보를 기준으로 메뉴 정보를 수정하는 메서드
+   *
+   * @param criteria 수정할 정보가 담긴 Map (menuCode, menuName, price 등)
+   */
+  public void modifyMenu(Map<String, Object> criteria) {
+
+    SqlSession sqlSession = getSqlSession();
+    mapper = sqlSession.getMapper(DynamicSqlMapper.class);
+
+    int result = mapper.modifyMenu(criteria);
+
+    if (result > 0) {
+      System.out.println("메뉴 정보 변경에 성공하셨습니다.");
+      sqlSession.commit();
+    } else {
+      System.out.println("메뉴 정보 변경에 실패하셨습니다.");
+      sqlSession.rollback();
     }
 
     sqlSession.close();

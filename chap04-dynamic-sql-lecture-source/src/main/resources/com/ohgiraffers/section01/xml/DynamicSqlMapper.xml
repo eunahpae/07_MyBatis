@@ -126,22 +126,22 @@
   </select>
 
   <!--
-  <foreach> 태그 설명:
-  MyBatis 에서 컬렉션(리스트, 배열 등)의 각 요소를 반복 처리하여 SQL 쿼리를 동적으로 생성할 때 사용.
-  자바의 for 문과 유사한 역할을 수행함.
+    <foreach> 태그 설명:
+    MyBatis 에서 컬렉션(리스트, 배열 등)의 각 요소를 반복 처리하여 SQL 쿼리를 동적으로 생성할 때 사용.
+    자바의 for 문과 유사한 역할을 수행함.
 
-  주요 속성:
-  1. collection : 반복 대상 컬렉션의 이름. 파라미터로 전달된 Map 이나 객체 내 컬렉션 프로퍼티명과 일치해야 함.
-  2. item : 반복 시 현재 요소를 참조할 이름. 반복문 내에서 #{item} 형태로 값 바인딩에 사용됨.
-  3. open : 반복 시작 시 가장 앞에 삽입될 문자 또는 문자열. 예) "(" → 괄호 여는 부분
-  4. separator : 각 요소 사이에 삽입될 구분자. 예) ", " → 각 값 사이 쉼표와 공백
-  5. close : 반복 종료 시 가장 뒤에 삽입될 문자 또는 문자열. 예) ")" → 괄호 닫는 부분
+    주요 속성:
+    1. collection : 반복 대상 컬렉션의 이름. 파라미터로 전달된 Map 이나 객체 내 컬렉션 프로퍼티명과 일치해야 함.
+    2. item : 반복 시 현재 요소를 참조할 이름. 반복문 내에서 #{item} 형태로 값 바인딩에 사용됨.
+    3. open : 반복 시작 시 가장 앞에 삽입될 문자 또는 문자열. 예) "(" → 괄호 여는 부분
+    4. separator : 각 요소 사이에 삽입될 구분자. 예) ", " → 각 값 사이 쉼표와 공백
+    5. close : 반복 종료 시 가장 뒤에 삽입될 문자 또는 문자열. 예) ")" → 괄호 닫는 부분
 
-  본 쿼리에서는 리스트에 담긴 메뉴 코드들을 SQL의 IN 절 내에 쉼표로 구분된 형태로 동적으로 나열하기 위해 사용함.
-  예를 들어 randomMenuCodeList가 [1, 3, 7] 이면, 아래 쿼리는 다음과 같이 변환됨:
-  WHERE 1 = 1
-    AND A.MENU_CODE IN (#{menuCode[0]}, #{menuCode[1]}, #{menuCode[2]})
-  실제 바인딩 시 각각의 #{menuCode}는 1, 3, 7 값으로 치환됨.
+    본 쿼리에서는 리스트에 담긴 메뉴 코드들을 SQL의 IN 절 내에 쉼표로 구분된 형태로 동적으로 나열하기 위해 사용함.
+    예를 들어 randomMenuCodeList가 [1, 3, 7] 이면, 아래 쿼리는 다음과 같이 변환됨:
+    WHERE 1 = 1
+      AND A.MENU_CODE IN (#{menuCode[0]}, #{menuCode[1]}, #{menuCode[2]})
+    실제 바인딩 시 각각의 #{menuCode}는 1, 3, 7 값으로 치환됨.
   -->
   <select id="searchMenuByRandomMenuCode" parameterType="hashmap" resultMap="menuResultMap">
     SELECT
@@ -157,4 +157,131 @@
       #{menuCode}
     </foreach>
   </select>
+
+  <!--
+    <where> 태그 :
+    - 쿼리문이 where 절로 시작하지 않아도 자동으로 where를 붙여준다.
+    - 내부 조건이 하나도 없으면 where를 생략한다.
+    - 조건이 AND나 OR로 시작할 경우 해당 단어를 자동으로 제거하여 올바른 구문을 만든다.
+
+    <trim> 태그 :
+    - where 태그가 처리하지 못하는 접두사/접미사 문제 해결을 위해 사용
+    - prefix(접두사), prefixOverrides(제거할 접두사), suffix(접미사), suffixOverrides(제거할 접미사) 속성을 가짐
+                  1. prefix(접두사) 속성 : 처리 후 엘리먼트의 내용이 있으면 가장 앞에 붙여주는 내용 기술
+                  2. prefixOverrides 속성 : 처리 후 엘리먼트 내용 중 가장 앞에 속성값이 해당하는 문자를 자동 삭제
+                  3. suffix(접미사) 속성 : 처리 후 엘리먼트의 내용이 있으면 가장 뒤에 붙여주는 내용 기술
+                  4. suffixOveeirdes 속성 : 처리 후 엘리먼트 내용 중 가장 뒤에 속성값이 해당하는 문자를 자동 삭제
+    - 주로 AND/OR 제거에 효과적이며, where 절 이외에도 set 절 등에서 활용 가능
+    -->
+
+  <select id="searchMenuByCodeOrSearchAll" parameterType="SearchCriteria" resultMap="menuResultMap">
+    SELECT
+    A.MENU_CODE
+    , A.MENU_NAME
+    , A.MENU_PRICE
+    , A.CATEGORY_CODE
+    , A.ORDERABLE_STATUS
+    FROM TBL_MENU A
+    <if test="condition != null and condition eq 'menuCode'">
+      <where>
+        A.MENU_CODE = #{ value }
+      </where>
+    </if>
+  </select>
+
+  <select id="searchMenuByNameOrCategory" parameterType="hashmap" resultMap="menuResultMap">
+    SELECT
+    A.MENU_CODE
+    , A.MENU_NAME
+    , A.MENU_PRICE
+    , A.CATEGORY_CODE
+    , A.ORDERABLE_STATUS
+    FROM TBL_MENU A
+
+    <!-- 문제 발생 상황 : 카테고리로만 조회하는 경우 WHERE가 붙지 않아 쿼리 오류 발생
+      <if test="nameValue != null">
+        WHERE A.MENU_NAME LIKE CONCAT('%', #{ nameValue }, '%')
+      </if>
+      <if test="categoryValue != null">
+        AND A.CATEGORY_CODE = #{ categoryValue }
+      </if>
+    -->
+
+    <!-- 해결방법 1 : <where> 태그 이용 -->
+    <!--<where>
+        <if test="nameValue != null">
+            A.MENU_NAME LIKE CONCAT('%', #{ nameValue }, '%')
+        </if>
+        <if test="categoryValue != null">
+            AND A.CATEGORY_CODE = #{ categoryValue }
+        </if>
+    </where>-->
+
+    <!-- 해결방법 2 : <trim> 태그 이용 -->
+    <trim prefix="WHERE" prefixOverrides="AND | OR">
+      <if test="nameValue != null">
+        A.MENU_NAME LIKE CONCAT('%', #{ nameValue }, '%')
+      </if>
+      <if test="categoryValue != null">
+        AND A.CATEGORY_CODE = #{ categoryValue }
+      </if>
+    </trim>
+  </select>
+
+  <!--
+    <set> 태그 :
+    - UPDATE 구문에서 SET 키워드와 필드 리스트를 자동으로 처리한다.
+    - 조건에 따라 변경할 컬럼을 동적으로 지정할 때 유용하다.
+    - 중복된 콤마(,) 처리 문제를 해결해 준다.
+  -->
+  <update id="modifyMenu" parameterType="hashmap">
+    <!--
+    UPDATE
+       TBL_MENU
+    SET MENU_NAME = #{ name }
+       , ORDERABLE_STATUS = #{ orderableStatus }
+    WHERE MENU_CODE = #{ code }
+    -->
+
+    <!--
+    UPDATE
+       TBL_MENU
+    <if test="name != null and name != ''">
+       SET MENU_NAME = #{ name }
+    </if>
+    <if test="orderableStatus != null and orderableStatus != ''">
+       , ORDERABLE_STATUS = #{ orderableStatus }
+    </if>
+    WHERE MENU_CODE = #{ code }
+    -->
+
+    <!-- 해결방안 1: <set> 태그 이용 -->
+    <!--
+    UPDATE
+       TBL_MENU
+    <set>
+        <if test="name != null and name != ''">
+            MENU_NAME = #{ name }
+        </if>
+        <if test="orderableStatus != null and orderableStatus != ''">
+            , ORDERABLE_STATUS = #{ orderableStatus }
+        </if>
+    </set>
+    WHERE MENU_CODE = #{ code }
+    -->
+
+    <!-- 해결방안 2: <trim> 태그 이용 -->
+    UPDATE
+    TBL_MENU
+    <trim prefix="SET" prefixOverrides=",">
+      <if test="name != null and name != ''">
+        , MENU_NAME = #{ name }
+      </if>
+      <if test="orderableStatus != null and orderableStatus != ''">
+        , ORDERABLE_STATUS = #{ orderableStatus }
+      </if>
+    </trim>
+    WHERE MENU_CODE = #{ code }
+  </update>
+
 </mapper>
